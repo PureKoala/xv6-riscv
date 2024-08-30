@@ -3,6 +3,7 @@
 #include "kernel/types.h"
 #include "user/user.h"
 #include "kernel/fcntl.h"
+#include "kernel/stat.h"
 
 // Parsed command representation
 #define EXEC  1
@@ -132,9 +133,10 @@ runcmd(struct cmd *cmd)
 }
 
 int
-getcmd(char *buf, int nbuf)
+getcmd(char *buf, int nbuf /*, int fromFile*/)
 {
-  write(2, "$ ", 2);
+  // if(!fromFile)
+    write(2, "$ ", 2);
   memset(buf, 0, nbuf);
   gets(buf, nbuf);
   if(buf[0] == 0) // EOF
@@ -147,9 +149,20 @@ main(void)
 {
   static char buf[100];
   int fd;
+  // struct stat st;
 
   // Ensure that three file descriptors are open.
   while((fd = open("console", O_RDWR)) >= 0){
+    // if(fd == 1){
+    //   if(fstat(fd, &st) < 0){
+    //     close(fd);
+    //     return 0;
+    //   }
+    //   printf("==TEST==");
+    //   printf("==DEV==%d\n", st.type == T_DEVICE);
+    //   printf("==FIL==%d\n", st.type == T_FILE);
+    //   printf("==DIR==%d\n", st.type == T_DIR);
+    // }
     if(fd >= 3){
       close(fd);
       break;
@@ -157,7 +170,7 @@ main(void)
   }
 
   // Read and run input commands.
-  while(getcmd(buf, sizeof(buf)) >= 0){
+  while(getcmd(buf, sizeof(buf) /*, st.type == T_FILE*/) >= 0){
     if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
       // Chdir must be called by the parent, not the child.
       buf[strlen(buf)-1] = 0;  // chop \n
